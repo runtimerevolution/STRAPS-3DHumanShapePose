@@ -1,7 +1,10 @@
 import os
 import argparse
+
+import numpy as np
 import torch
 
+import config
 from models.regressor import SingleInputRegressor
 from predict.predict_3D import predict_3D
 
@@ -10,7 +13,7 @@ from measurer.utils import evaluate_mae
 
 
 def get_measurers(height, joints, vertices):
-    measurer = MeasureLoadedSMPL("NEUTRAL", vertices, joints)
+    measurer = MeasureLoadedSMPL("NEUTRAL", vertices, joints, faces=np.load(config.SMPL_FACES_PATH))
     measurer.measure(measurer.all_possible_measurements)
     measurer.height_normalize_measurements(height)
 
