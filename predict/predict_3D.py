@@ -44,13 +44,13 @@ def setup_detectron2_predictors(silhouettes_from='densepose'):
 
     if silhouettes_from == 'pointrend':
         # PointRend-RCNN-R50-FPN
-        maskrcnn_config_file = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
-        maskrcnn_cfg = get_cfg()
-        maskrcnn_cfg.merge_from_file(model_zoo.get_config_file(maskrcnn_config_file))
-        maskrcnn_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-        maskrcnn_cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(maskrcnn_config_file)
-        maskrcnn_cfg.freeze()
-        silhouette_predictor = DefaultPredictor(maskrcnn_cfg)
+        pointrend_config_file = "PointRend/configs/InstanceSegmentation/pointrend_rcnn_R_50_FPN_3x_coco.yaml"
+        pointrend_cfg = get_cfg()
+        add_pointrend_config(pointrend_cfg)
+        pointrend_cfg.merge_from_file(pointrend_config_file)
+        pointrend_cfg.MODEL.WEIGHTS = "checkpoints/pointrend_rcnn_R_50_fpn.pkl"
+        pointrend_cfg.freeze()
+        silhouette_predictor = DefaultPredictor(pointrend_cfg)
     elif silhouettes_from == 'densepose':
         # DensePose-RCNN-R101-FPN
         densepose_config_file = "DensePose/configs/densepose_rcnn_R_101_FPN_s1x.yaml"
@@ -83,8 +83,6 @@ def predict_3D(input,
                proxy_rep_input_wh=512,
                save_proxy_vis=True,
                render_vis=True):
-
-    image_joints_vertices = dict()
 
     # Set-up proxy representation predictors.
     joints2D_predictor, silhouette_predictor = setup_detectron2_predictors(silhouettes_from=silhouettes_from)
@@ -151,13 +149,10 @@ def predict_3D(input,
                 pred_reposed_vertices = pred_reposed_smpl_output.vertices
 
             # Numpy-fying
-            pred_joints = pred_smpl_output.joints.cpu().detach().numpy()[0]
             pred_vertices = pred_vertices.cpu().detach().numpy()[0]
             pred_vertices2d = pred_vertices2d.cpu().detach().numpy()[0]
             pred_reposed_vertices = pred_reposed_vertices.cpu().detach().numpy()[0]
             pred_cam_wp = pred_cam_wp.cpu().detach().numpy()[0]
-
-            image_joints_vertices[fname] = pred_joints, pred_reposed_vertices
 
             if not os.path.isdir(os.path.join(input, 'verts_vis')):
                 os.makedirs(os.path.join(input, 'verts_vis'))
@@ -186,5 +181,3 @@ def predict_3D(input,
                     os.makedirs(os.path.join(input, 'proxy_vis'))
                 cv2.imwrite(os.path.join(input, 'proxy_vis', 'silhouette_'+fname), silhouette_vis)
                 cv2.imwrite(os.path.join(input, 'proxy_vis', 'joints2D_'+fname), joints2D_vis)
-
-    return image_joints_vertices

@@ -50,12 +50,11 @@ def predict_joints2D(input_image, predictor):
         keypoints = keypoints[largest_centred_bbox_index]
 
         for j in range(keypoints.shape[0]):
-            x, y = int(keypoints[j, 0]), int(keypoints[j, 1])
-            cv2.circle(image, (x, y), 5, (0, 255, 0), -1)
+            cv2.circle(image, (keypoints[j, 0], keypoints[j, 1]), 5, (0, 255, 0), -1)
             font = cv2.FONT_HERSHEY_SIMPLEX
             fontScale = 0.5
             fontColor = (0, 0, 255)
-            cv2.putText(image, str(j), (x, y),
+            cv2.putText(image, str(j), (keypoints[j, 0], keypoints[j, 1]),
                                      font, fontScale, fontColor, lineType=2)
 
     return keypoints, image
