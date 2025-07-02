@@ -5,8 +5,8 @@ from torch import nn
 from torch.nn import functional as F
 
 from detectron2.layers import Conv2d, ConvTranspose2d, interpolate
-from detectron2.structures.boxes import matched_boxlist_iou
 from detectron2.utils.registry import Registry
+from detectron2.structures import pairwise_iou
 
 from .structures import DensePoseOutput
 
@@ -367,7 +367,7 @@ class DensePoseDataFilter(object):
             gt_boxes = proposals_per_image.gt_boxes
             est_boxes = proposals_per_image.proposal_boxes
             # apply match threshold for densepose head
-            iou = matched_boxlist_iou(gt_boxes, est_boxes)
+            iou = pairwise_iou(gt_boxes, est_boxes)
             iou_select = iou > self.iou_threshold
             proposals_per_image = proposals_per_image[iou_select]
             assert len(proposals_per_image.gt_boxes) == len(proposals_per_image.proposal_boxes)
