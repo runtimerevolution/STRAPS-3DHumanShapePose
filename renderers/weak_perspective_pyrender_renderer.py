@@ -61,6 +61,10 @@ class Renderer():
         # light_pose[:3, 3] = [1, 1, 2]
         # self.scene.add(light, pose=light_pose)
 
+    def set_resolution(self, resolution):
+        self.render.viewport_width = resolution[0]
+        self.render.viewport_height = resolution[1]
+
     def render(self, verts, cam, img=None, angle=None, axis=None, mesh_filename=None, color=[0.8, 0.3, 0.3],
                return_mask=False):
 
@@ -107,7 +111,7 @@ class Renderer():
             return valid_mask
         else:
             if img is None:
-                img = np.zeros((self.resolution[0], self.resolution[1], 3))
+                img = np.full_like((self.resolution[0], self.resolution[1], 3), config.REPOSED_IMAGE_BACKGROUND_RGB_COLOR)
             valid_mask = valid_mask[:, :, None]
             output_img = rgb[:, :, :-1] * valid_mask + (1 - valid_mask) * img
             image = output_img.astype(np.uint8)

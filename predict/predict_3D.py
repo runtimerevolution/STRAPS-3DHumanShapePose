@@ -17,6 +17,7 @@ from predict.predict_silhouette_pointrend import predict_silhouette_pointrend
 from predict.predict_densepose import predict_densepose
 
 from models.smpl_official import SMPL
+from renderers.intrinsics_perspective_centered_renderer import CenteredRenderer
 from renderers.weak_perspective_pyrender_renderer import Renderer
 
 from utils.image_utils import pad_to_square, crop_and_resize_silhouette_joints
@@ -172,10 +173,11 @@ def predict_3D(input,
                 # Set-up renderer for visualisation.
                 wp_renderer = Renderer(resolution=(proxy_rep_input_wh, proxy_rep_input_wh))
                 rend_img = wp_renderer.render(verts=pred_vertices, cam=pred_cam_wp, img=image)
-                rend_reposed_img = wp_renderer.render(verts=pred_reposed_vertices,
-                                                      cam=np.array([0.8, 0., -0.2]),
-                                                      angle=180,
-                                                      axis=[1, 0, 0])
+
+                # Set a new resolution to reposed image
+                wp_centered_renderer = CenteredRenderer(resolution=config.REPOSE_IMAGE_RESOLUTION)
+                rend_reposed_img = wp_centered_renderer.render(verts=pred_reposed_vertices,
+                                                      cam=np.array([0.8, 0., -0.2]))
                 if not os.path.isdir(os.path.join(input, 'rend_vis')):
                     os.makedirs(os.path.join(input, 'rend_vis'))
                 cv2.imwrite(os.path.join(input, 'rend_vis', 'rend_'+fname), rend_img)
