@@ -34,26 +34,26 @@ class CenteredRenderer(Renderer):
         scale_y = (height * self.margin_factor) / model_size[1]
         scale = min(scale_x, scale_y) * self.scale_multiplier
 
-        # Pure geometric centering - no bias
-        x_offset = -model_center[0]
-        y_offset = -model_center[1]
-
         # Center the model in the target resolution
         center_x = width / 2
         center_y = height / 2
 
         mesh = trimesh.Trimesh(vertices=verts, faces=self.faces)
 
-        Rx = trimesh.transformations.rotation_matrix(math.radians(180), [1, 0, 0])
-        mesh.apply_transform(Rx)
+        # This ensures the model is always centered regardless of its original position
+        translation_matrix = np.eye(4)
+        translation_matrix[:3, 3] = -model_center
+        mesh.apply_transform(translation_matrix)
 
-        if mesh_filename is not None:
-            mesh.export(mesh_filename)
-
+        # Apply custom rotation if specified (after centering)
         if angle and axis:
             R = trimesh.transformations.rotation_matrix(math.radians(angle), axis)
             mesh.apply_transform(R)
 
+        if mesh_filename is not None:
+            mesh.export(mesh_filename)
+
+        # Create camera with proper intrinsics
         camera = pyrender.IntrinsicsCamera(
             fx=scale,
             fy=scale,
@@ -71,9 +71,15 @@ class CenteredRenderer(Renderer):
 
         mesh_node = self.scene.add(mesh, 'mesh')
 
+        # Calculate proper camera distance to avoid cropping
+        diagonal_size = np.linalg.norm(model_size)
+        camera_distance = diagonal_size * 2.0
+
+        # Create camera pose matrix
         camera_pose = np.eye(4)
-        camera_pose[:3, 3] = [x_offset, y_offset, 5.0]
-        camera_pose[0, 3] *= -1
+        # Position camera looking down the negative Z axis (standard camera setup)
+        camera_pose[:3, 3] = [0, 0, camera_distance]
+
         cam_node = self.scene.add(camera, pose=camera_pose)
 
         rgb, rend_depth = self.renderer.render(self.scene, flags=RenderFlags.RGBA)
@@ -82,7 +88,8 @@ class CenteredRenderer(Renderer):
             return valid_mask
         else:
             if img is None:
-                img = np.full_like((self.resolution[0], self.resolution[1], 3), config.REPOSED_IMAGE_BACKGROUND_RGB_COLOR)
+                img = np.full_like((self.resolution[0], self.resolution[1], 3),
+                                   config.REPOSED_IMAGE_BACKGROUND_RGB_COLOR)
             valid_mask = valid_mask[:, :, None]
             output_img = rgb[:, :, :-1] * valid_mask + (1 - valid_mask) * img
             image = output_img.astype(np.uint8)
