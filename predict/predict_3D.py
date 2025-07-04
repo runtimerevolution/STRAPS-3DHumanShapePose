@@ -8,7 +8,6 @@ from detectron2.config import get_cfg
 from detectron2 import model_zoo
 from detectron2.engine import DefaultPredictor
 
-from PointRend.point_rend import add_pointrend_config
 from DensePose.densepose import add_densepose_config
 
 import config
@@ -93,10 +92,6 @@ def predict_3D(input,
     # Set-up SMPL model.
     smpl = SMPL(config.SMPL_MODEL_DIR, batch_size=1).to(device)
 
-    if render_vis:
-        # Set-up renderer for visualisation.
-        wp_renderer = Renderer(resolution=(proxy_rep_input_wh, proxy_rep_input_wh))
-
     if os.path.isdir(input):
         image_fnames = [f for f in sorted(os.listdir(input)) if f.endswith('.png') or
                         f.endswith('.jpg')]
@@ -174,6 +169,8 @@ def predict_3D(input,
             plt.savefig(os.path.join(input, 'verts_vis', 'verts_'+fname))
 
             if render_vis:
+                # Set-up renderer for visualisation.
+                wp_renderer = Renderer(resolution=(proxy_rep_input_wh, proxy_rep_input_wh))
                 rend_img = wp_renderer.render(verts=pred_vertices, cam=pred_cam_wp, img=image)
                 rend_reposed_img = wp_renderer.render(verts=pred_reposed_vertices,
                                                       cam=np.array([0.8, 0., -0.2]),
