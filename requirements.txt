@@ -6,5 +6,7 @@ trimesh
 smplx
 scikit-image
 cython
+chumpy
 torch
+torchvision
 pycocotools
