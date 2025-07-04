@@ -43,7 +43,7 @@ def setup_detectron2_predictors(silhouettes_from='densepose'):
     joints2D_predictor = DefaultPredictor(kprcnn_cfg)
 
     if silhouettes_from == 'pointrend':
-        # PointRend-RCNN-R50-FPN
+        # Mask R-CNN for instance segmentation masks
         maskrcnn_config_file = "COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml"
         maskrcnn_cfg = get_cfg()
         maskrcnn_cfg.merge_from_file(model_zoo.get_config_file(maskrcnn_config_file))
@@ -51,6 +51,7 @@ def setup_detectron2_predictors(silhouettes_from='densepose'):
         maskrcnn_cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(maskrcnn_config_file)
         maskrcnn_cfg.freeze()
         silhouette_predictor = DefaultPredictor(maskrcnn_cfg)
+
     elif silhouettes_from == 'densepose':
         # DensePose-RCNN-R101-FPN
         densepose_config_file = "DensePose/configs/densepose_rcnn_R_101_FPN_s1x.yaml"
@@ -142,6 +143,7 @@ def predict_3D(input,
                                         global_orient=pred_pose_rotmats[:, 0].unsqueeze(1),
                                         betas=pred_shape,
                                         pose2rot=False)
+                pred_joints = pred_smpl_output.joints
                 pred_vertices = pred_smpl_output.vertices
                 pred_vertices2d = orthographic_project_torch(pred_vertices, pred_cam_wp)
                 pred_vertices2d = undo_keypoint_normalisation(pred_vertices2d,
@@ -151,13 +153,13 @@ def predict_3D(input,
                 pred_reposed_vertices = pred_reposed_smpl_output.vertices
 
             # Numpy-fying
-            pred_joints = pred_smpl_output.joints.cpu().detach().numpy()[0]
+            pred_joints = pred_joints.cpu().detach().numpy()[0]
             pred_vertices = pred_vertices.cpu().detach().numpy()[0]
             pred_vertices2d = pred_vertices2d.cpu().detach().numpy()[0]
             pred_reposed_vertices = pred_reposed_vertices.cpu().detach().numpy()[0]
             pred_cam_wp = pred_cam_wp.cpu().detach().numpy()[0]
 
-            image_joints_vertices[fname] = pred_joints, pred_reposed_vertices
+            image_joints_vertices[fname] = pred_joints, pred_vertices
 
             if not os.path.isdir(os.path.join(input, 'verts_vis')):
                 os.makedirs(os.path.join(input, 'verts_vis'))
