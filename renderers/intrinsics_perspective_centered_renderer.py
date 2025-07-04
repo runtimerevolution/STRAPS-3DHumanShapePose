@@ -1,5 +1,4 @@
 import math
-from gettext import translation
 
 import numpy as np
 import pyrender
@@ -18,8 +17,12 @@ class CenteredRenderer(Renderer):
         self.margin_factor = margin_factor
         self.scale_multiplier = scale_multiplier
 
-    def render(self, verts, cam, img=None, angle=None, axis=None, mesh_filename=None, color=[0.8, 0.3, 0.3],
+    def render(self, verts, cam, img=None, angle=None, axis=None, mesh_filename=None, color=config.MODEL_SKIN_COLOR,
                return_mask=False):
+
+        from utils.segmentation import smpl_body_segmentation, body_to_vertex_colors
+        s = smpl_body_segmentation()
+        vertex_colors = body_to_vertex_colors(s, verts.shape[0])
 
         width, height = self.resolution
 
@@ -38,7 +41,7 @@ class CenteredRenderer(Renderer):
         center_x = width / 2
         center_y = height / 2
 
-        mesh = trimesh.Trimesh(vertices=verts, faces=self.faces)
+        mesh = trimesh.Trimesh(vertices=verts, faces=self.faces, vertex_colors=vertex_colors)
 
         # This ensures the model is always centered regardless of its original position
         translation_matrix = np.eye(4)
@@ -61,14 +64,7 @@ class CenteredRenderer(Renderer):
             cy=center_y,
         )
 
-        material = pyrender.MetallicRoughnessMaterial(
-            metallicFactor=0.2,
-            alphaMode='OPAQUE',
-            baseColorFactor=(color[0], color[1], color[2], 1.0)
-        )
-
-        mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
-
+        mesh = pyrender.Mesh.from_trimesh(mesh)
         mesh_node = self.scene.add(mesh, 'mesh')
 
         # Calculate proper camera distance to avoid cropping
@@ -77,7 +73,6 @@ class CenteredRenderer(Renderer):
 
         # Create camera pose matrix
         camera_pose = np.eye(4)
-        # Position camera looking down the negative Z axis (standard camera setup)
         camera_pose[:3, 3] = [0, 0, camera_distance]
 
         cam_node = self.scene.add(camera, pose=camera_pose)

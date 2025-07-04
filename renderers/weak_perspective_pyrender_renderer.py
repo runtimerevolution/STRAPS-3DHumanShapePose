@@ -65,7 +65,7 @@ class Renderer():
         self.render.viewport_width = resolution[0]
         self.render.viewport_height = resolution[1]
 
-    def render(self, verts, cam, img=None, angle=None, axis=None, mesh_filename=None, color=[0.8, 0.3, 0.3],
+    def render(self, verts, cam, img=None, angle=None, axis=None, mesh_filename=None, color=config.MODEL_SKIN_COLOR,
                return_mask=False):
 
         mesh = trimesh.Trimesh(vertices=verts, faces=self.faces)
